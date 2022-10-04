@@ -13,7 +13,6 @@ from training import mrcnn as mrcnn_training
 import tensorflow.keras.backend as K
 from utils import plotting
 import logging.config
-from utils import umap_tools
 
 config = configparser.ConfigParser()
 config.read('config.ini')
