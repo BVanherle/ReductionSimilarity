@@ -165,28 +165,29 @@ def test_epochs(subsets: list, models: list):
 def compare_feature_maps(model_id: str):
     subsets = ["real_jaigo_000-150", "sim_jaigo_real_light_real_pose", "sim_jaigo_real_light_rand_pose",
                "sim_jaigo_rand_light_real_pose", "sim_jaigo_rand_light_rand_pose"]
-    titles = ["real", "synth", "synth, rand pose", "synth, rand light", "synth, rand all"]
 
     results = {}
+
+    images_per_dataset = 5
 
     for level in range(4):
         results[str(level)] = {}
         print(f"Creating Reducer for level {level}\n")
         total_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, subsets,
-                                                                  train_image_counts=[1755] * len(subsets))
+                                                                  train_image_counts=[images_per_dataset] * len(subsets))
         config = data.mrcnn_dimo.get_test_dimo_config(total_dataset, model_id)
         model = mrcnn_training.load_model(model_id, config)
 
         reducer = UMAPReducer()
         dataset_reducer = DatasetReducer(reducer, model, level, config)
-        dataset_reducer.train(total_dataset, samples=400)
+        dataset_reducer.train(total_dataset, samples=4)
 
         for set in subsets:
             print(f"Reducing dimension of {set}")
-            subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set], train_image_counts=[1755])
+            subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set], train_image_counts=[images_per_dataset])
 
-            embedding = dataset_reducer.reduce_dataset(subset_dataset, batch_size=100)
-            results[str(level)][set] = embedding
+            embedding = dataset_reducer.reduce_dataset(subset_dataset, batch_size=1)
+            results[str(level)][set] = embedding.tolist()
 
         del model
         K.clear_session()
@@ -194,5 +195,12 @@ def compare_feature_maps(model_id: str):
     file_io.write_embeddings(results, "embeddings.json")
 
 
+def show_embedding(file_name: str):
+    titles = ["real", "synth", "synth, rand pose", "synth, rand light", "synth, rand all"]
+    data = file_io.read_embeddings(file_name)
+    plotting.plot_feature_maps(data, titles)
+
+
 if __name__ == "__main__":
-    pass
+    # compare_feature_maps("dimo20220315T0958")
+    show_embedding("embeddings.json")

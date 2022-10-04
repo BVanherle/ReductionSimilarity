@@ -304,19 +304,23 @@ def experiment_5():
     fig.savefig('../plots/exp5.png', dpi=300)
 
 
-def plot_feature_maps(embeddings_per_level: List[np.array], titles: list = None):
-    titles = list(map(str, range(len(embeddings_per_level[0])))) if titles is None else titles
+def plot_feature_maps(data: dict, titles: list = None):
+    titles = list(map(str, list(data[list(data.keys())[0]].keys()))) if titles is None else titles
 
-    fig, ax = plt.subplots(1, len(embeddings_per_level), figsize=(10,4))
+    fig, ax = plt.subplots(1, len(data.keys()), figsize=(14,4))
 
-    for i, level_embeddings in enumerate(embeddings_per_level):
-        for embedding, title in zip(level_embeddings, titles):
-            ax[i].scatter(embedding[:,0], embedding[:,1], label=title, s=0.5)
-            ax[i].set_title(f"Level {i}")
+    for level in data.keys():
+        for set in data[level].keys():
+            embedding = np.array(data[level][set])
+            ax[int(level)].scatter(embedding[:,0], embedding[:,1], label=titles[int(level)], s=0.5)
+        ax[int(level)].set_title(f"Level {level}")
 
-    ax[-1].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    legend = ax[-1].legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    for handle in legend.legendHandles:
+        handle._sizes = [30]
+
     fig.tight_layout()
-    plt.show()
+    fig.savefig('plots/umap.png', dpi=300)
 
 
 if __name__ == "__main__":

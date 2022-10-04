@@ -1,7 +1,7 @@
 import math
 from typing import List
 
-from reducer import Reducer
+from reduction import Reducer
 from mrcnn.config import Config
 from mrcnn.utils import Dataset
 import mrcnn.model as modellib
