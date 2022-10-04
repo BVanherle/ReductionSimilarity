@@ -303,6 +303,7 @@ def experiment_5():
 
     fig.savefig('../plots/exp5.png', dpi=300)
 
+
 def plot_feature_maps(embeddings_per_level: List[np.array], titles: list = None):
     titles = list(map(str, range(len(embeddings_per_level[0])))) if titles is None else titles
 

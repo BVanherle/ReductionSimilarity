@@ -21,13 +21,13 @@ config.read('config.ini')
 
 DIMO_PATH = config['USER_SETTINGS']['dimo_path']
 
-
 logfile = "log.txt"
 logging.basicConfig(filename=logfile, level=logging.INFO, format='%(message)s')
 logging.config.dictConfig({
     'version': 1,
     'disable_existing_loggers': True,
 })
+
 
 def test_batch(batch_file: str):
     model_tests = file_io.read_test_batch(batch_file)
@@ -53,7 +53,8 @@ def test_batch(batch_file: str):
 
 
 def train_subsets(subsets: list, model_id: str = None, augment: bool = False, transfer_learning: bool = False,
-                  train_image_counts: list = None, ft_subsets: list = None, ft_image_count: int = None, layers: str = None, save_all: bool = False, dimo_path: str = None):
+                  train_image_counts: list = None, ft_subsets: list = None, ft_image_count: int = None,
+                  layers: str = None, save_all: bool = False, dimo_path: str = None):
     target_dimo_path = dimo_path if dimo_path is not None else DIMO_PATH
     # load training set
     train, val, config = mrcnn_dimo.get_dimo_datasets(target_dimo_path, subsets, train_image_counts=train_image_counts)
@@ -67,12 +68,13 @@ def train_subsets(subsets: list, model_id: str = None, augment: bool = False, tr
     model = mrcnn_training.load_model(model_id, config, mode="training") if model_id else None
     layers = layers if layers else 'heads'
     # train model
-    mrcnn_training.train(train, val, config, augment=augment, use_coco_weights=transfer_learning, checkpoint_model=model, ft_train_set=ft_train, layers=layers, save_all=save_all)
+    mrcnn_training.train(train, val, config, augment=augment, use_coco_weights=transfer_learning,
+                         checkpoint_model=model, ft_train_set=ft_train, layers=layers, save_all=save_all)
 
 
 def prepare_subsets(subsets: list, override: bool = False, split_scenes: bool = False, dimo_path: str = None):
     target_dimo_path = dimo_path if dimo_path is not None else DIMO_PATH
-    #data_utils.create_dimo_masks(target_dimo_path, subsets, override=override)
+    # data_utils.create_dimo_masks(target_dimo_path, subsets, override=override)
     data_utils.create_dimo_train_split(target_dimo_path, subsets, seed=10, split_scenes=split_scenes)
 
 
@@ -89,7 +91,8 @@ def show_subsets(subsets: list, dimo_path: str = None):
         image_info = dataset_train.image_info[image_id]
         image, image_meta, gt_class_id, gt_bbox, gt_mask = modellib.load_image_gt(dataset_train, config, image_id)
         # Compute Bounding box
-        mrcnn_visualise.display_instances(image, gt_bbox, gt_mask, gt_class_id, dataset_train.class_names, title=image_info['id'])
+        mrcnn_visualise.display_instances(image, gt_bbox, gt_mask, gt_class_id, dataset_train.class_names,
+                                          title=image_info['id'])
 
 
 def test_subsets(subsets: list, model_id: str, save_results: bool = False, dimo_path: str = None):
@@ -112,11 +115,12 @@ def test_subsets(subsets: list, model_id: str, save_results: bool = False, dimo_
         visualize.show_results(results, mrcnn_dimo.get_dataset_images(dataset, config), dataset.class_names)
 
 
-def test_folder(folder: str,  model_id: str, num_classes: int, select_roi=False, save_folder=None):
+def test_folder(folder: str, model_id: str, num_classes: int, select_roi=False, save_folder=None):
     config = data.mrcnn_dimo.DimoInferenceConfig(num_classes=num_classes)
     model = mrcnn_training.load_model(model_id, config)
 
-    images = [cv2.cvtColor(cv2.imread(os.path.join(folder, file)),cv2.COLOR_BGR2RGB) for file in os.listdir(folder) if file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg")]
+    images = [cv2.cvtColor(cv2.imread(os.path.join(folder, file)), cv2.COLOR_BGR2RGB) for file in os.listdir(folder) if
+              file.endswith(".jpg") or file.endswith(".png") or file.endswith(".jpeg")]
     class_names = [str(i) for i in range(num_classes)]
 
     if select_roi:
@@ -137,7 +141,8 @@ def test_epochs(subsets: list, models: list):
 
     for model_id in models:
         config = data.mrcnn_dimo.get_test_dimo_config(dataset, model_id)
-        available_epochs = np.array(mrcnn_training.get_available_epochs(f"{mrcnn_training.get_model_folder()}/{model_id}"))
+        available_epochs = np.array(
+            mrcnn_training.get_available_epochs(f"{mrcnn_training.get_model_folder()}/{model_id}"))
         test_epochs = np.arange(0, np.max(available_epochs) + 1, test_frequency).astype(np.int)
         test_epochs[0] += 1
         tested_epochs = []
@@ -158,13 +163,17 @@ def test_epochs(subsets: list, models: list):
 
 
 def compare_feature_maps(model_id: str):
-    embeddings_per_level = []
-    subsets = ["real_jaigo_000-150", "sim_jaigo_real_light_real_pose", "sim_jaigo_real_light_rand_pose", "sim_jaigo_rand_light_real_pose", "sim_jaigo_rand_light_rand_pose"]
+    subsets = ["real_jaigo_000-150", "sim_jaigo_real_light_real_pose", "sim_jaigo_real_light_rand_pose",
+               "sim_jaigo_rand_light_real_pose", "sim_jaigo_rand_light_rand_pose"]
     titles = ["real", "synth", "synth, rand pose", "synth, rand light", "synth, rand all"]
 
+    results = {}
+
     for level in range(4):
+        results[str(level)] = {}
         print(f"Creating Reducer for level {level}\n")
-        total_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, subsets, train_image_counts=[1755] * len(subsets))
+        total_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, subsets,
+                                                                  train_image_counts=[1755] * len(subsets))
         config = data.mrcnn_dimo.get_test_dimo_config(total_dataset, model_id)
         model = mrcnn_training.load_model(model_id, config)
 
@@ -172,19 +181,18 @@ def compare_feature_maps(model_id: str):
         dataset_reducer = DatasetReducer(reducer, model, level, config)
         dataset_reducer.train(total_dataset, samples=400)
 
-        embeddings = []
         for set in subsets:
             print(f"Reducing dimension of {set}")
             subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set], train_image_counts=[1755])
 
             embedding = dataset_reducer.reduce_dataset(subset_dataset, batch_size=100)
-            embeddings.append(embedding)
+            results[str(level)][set] = embedding
 
         del model
         K.clear_session()
-        embeddings_per_level.append(embeddings)
 
-    plotting.plot_feature_maps(embeddings_per_level, titles)
+    file_io.write_embeddings(results, "embeddings.json")
+
 
 if __name__ == "__main__":
     pass

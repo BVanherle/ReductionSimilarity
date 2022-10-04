@@ -1,3 +1,4 @@
+import json
 import os.path
 from typing import Tuple, List, Any
 from training.evaluation import ModelTest
@@ -41,8 +42,18 @@ def read_model_epochs(model_id: str) -> Tuple[List[Any], List[Any]]:
 
 
 def write_test_metrics(tests: List[ModelTest], filename: str):
-
     with open(filename, 'w') as f:
         f.write("model_id,subset,ap,ap50,ap75\n")
         for test in tests:
-            f.write(f"{test.model_id},{test.test_subset},{test.metrics['ap']},{test.metrics['ap_50']},{test.metrics['ap_75']}\n")
+            f.write(
+                f"{test.model_id},{test.test_subset},{test.metrics['ap']},{test.metrics['ap_50']},{test.metrics['ap_75']}\n")
+
+
+def write_embeddings(data: dict, file_path: str):
+    with open(file_path, 'w') as f:
+        json.dump(data, f)
+
+
+def read_embeddings(file_path: str) -> dict:
+    with open(file_path, 'r') as f:
+        return json.load(f)
