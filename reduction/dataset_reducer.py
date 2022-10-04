@@ -32,7 +32,7 @@ class DatasetReducer:
 
         return np.array(features)
 
-    def train(self, dataset: Dataset, config: Config, samples: int):
+    def train(self, dataset: Dataset, samples: int):
         ids = dataset.image_ids
         np.random.shuffle(ids)
 

@@ -4,6 +4,8 @@ from data import mrcnn_dimo
 import os, random
 from mrcnn import visualize as mrcnn_visualise
 from mrcnn import model as modellib
+from reduction.dataset_reducer import DatasetReducer
+from reduction.umap_reducer import UMAPReducer
 from training import evaluation, detection
 from utils import visualize, interactions, file_io
 import configparser
@@ -154,6 +156,35 @@ def test_epochs(subsets: list, models: list):
 
         file_io.write_model_epochs(model_id, aps, tested_epochs)
 
+
+def compare_feature_maps(model_id: str):
+    embeddings_per_level = []
+    subsets = ["real_jaigo_000-150", "sim_jaigo_real_light_real_pose", "sim_jaigo_real_light_rand_pose", "sim_jaigo_rand_light_real_pose", "sim_jaigo_rand_light_rand_pose"]
+    titles = ["real", "synth", "synth, rand pose", "synth, rand light", "synth, rand all"]
+
+    for level in range(4):
+        print(f"Creating Reducer for level {level}\n")
+        total_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, subsets, train_image_counts=[1755] * len(subsets))
+        config = data.mrcnn_dimo.get_test_dimo_config(total_dataset, model_id)
+        model = mrcnn_training.load_model(model_id, config)
+
+        reducer = UMAPReducer()
+        dataset_reducer = DatasetReducer(reducer, model, level, config)
+        dataset_reducer.train(total_dataset, samples=400)
+
+        embeddings = []
+        for set in subsets:
+            print(f"Reducing dimension of {set}")
+            subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set], train_image_counts=[1755])
+
+            embedding = dataset_reducer.reduce_dataset(subset_dataset, batch_size=100)
+            embeddings.append(embedding)
+
+        del model
+        K.clear_session()
+        embeddings_per_level.append(embeddings)
+
+    plotting.plot_feature_maps(embeddings_per_level, titles)
 
 if __name__ == "__main__":
     pass
