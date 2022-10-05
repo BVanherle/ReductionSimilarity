@@ -310,9 +310,9 @@ def plot_feature_maps(data: dict, titles: list = None):
     fig, ax = plt.subplots(1, len(data.keys()), figsize=(14,4))
 
     for level in data.keys():
-        for set in data[level].keys():
+        for i, set in enumerate(data[level].keys()):
             embedding = np.array(data[level][set])
-            ax[int(level)].scatter(embedding[:,0], embedding[:,1], label=titles[int(level)], s=0.5)
+            ax[int(level)].scatter(embedding[:,0], embedding[:,1], label=titles[i], s=0.5)
         ax[int(level)].set_title(f"Level {level}")
 
     legend = ax[-1].legend(loc='center left', bbox_to_anchor=(1, 0.5))

@@ -168,7 +168,7 @@ def compare_feature_maps(model_id: str):
 
     results = {}
 
-    images_per_dataset = 5
+    images_per_dataset = 20
 
     for level in range(4):
         results[str(level)] = {}
@@ -180,13 +180,13 @@ def compare_feature_maps(model_id: str):
 
         reducer = UMAPReducer()
         dataset_reducer = DatasetReducer(reducer, model, level, config)
-        dataset_reducer.train(total_dataset, samples=4)
+        dataset_reducer.train(total_dataset, samples=5)
 
         for set in subsets:
             print(f"Reducing dimension of {set}")
             subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set], train_image_counts=[images_per_dataset])
 
-            embedding = dataset_reducer.reduce_dataset(subset_dataset, batch_size=1)
+            embedding = dataset_reducer.reduce_dataset(subset_dataset, batch_size=2)
             results[str(level)][set] = embedding.tolist()
 
         del model
@@ -202,5 +202,5 @@ def show_embedding(file_name: str):
 
 
 if __name__ == "__main__":
-    # compare_feature_maps("dimo20220315T0958")
-    show_embedding("embeddings.json")
+    compare_feature_maps("dimo20220315T0958")
+    #show_embedding("embeddings.json")

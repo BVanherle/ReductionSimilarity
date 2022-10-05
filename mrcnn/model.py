@@ -1831,6 +1831,7 @@ class MaskRCNN(object):
         self.config = config
         self.model_dir = model_dir
         self.set_log_dir()
+        self.backbone_layer_names = []
         self.keras_model = self.build(mode=mode, config=config)
 
     def build(self, mode, config):
@@ -1896,6 +1897,9 @@ class MaskRCNN(object):
         else:
             _, C2, C3, C4, C5 = resnet_graph(input_image, config.BACKBONE,
                                              stage5=True, train_bn=config.TRAIN_BN)
+
+        self.backbone_layer_names = [name.split("/")[0] for name in [C2.name, C3.name, C4.name, C5.name]]
+
         # Top-down Layers
         # TODO: add assert to varify feature map sizes match what's in config
         P5 = KL.Conv2D(config.TOP_DOWN_PYRAMID_SIZE, (1, 1), name='fpn_c5p5')(C5)
@@ -2075,10 +2079,10 @@ class MaskRCNN(object):
              self.keras_model.get_layer("input_image_meta").input,
              self.keras_model.get_layer("input_anchors").input
              ],
-            [self.keras_model.get_layer("fpn_p2").output,
-             self.keras_model.get_layer("fpn_p3").output,
-             self.keras_model.get_layer("fpn_p4").output,
-             self.keras_model.get_layer("fpn_p5").output
+            [self.keras_model.get_layer(self.backbone_layer_names[0]).output,
+             self.keras_model.get_layer(self.backbone_layer_names[1]).output,
+             self.keras_model.get_layer(self.backbone_layer_names[2]).output,
+             self.keras_model.get_layer(self.backbone_layer_names[3]).output
              ])
 
     def find_last(self):
