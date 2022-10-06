@@ -6,7 +6,7 @@ from reduction.reducer import Reducer
 
 class UMAPReducer(Reducer):
     def __init__(self, dimension: int = 2):
-        super().__init__()
+        super().__init__(dimension)
 
         self.umap_reducer = umap.UMAP(random_state=10, n_components=dimension)
 

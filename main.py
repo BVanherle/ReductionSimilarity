@@ -5,6 +5,7 @@ import os, random
 from mrcnn import visualize as mrcnn_visualise
 from mrcnn import model as modellib
 from reduction.dataset_reducer import DatasetReducer
+from reduction.level_dataset_reducer import LevelDatasetReducer
 from reduction.umap_reducer import UMAPReducer
 from training import evaluation, detection
 from utils import visualize, interactions, file_io
@@ -192,7 +193,37 @@ def compare_feature_maps(model_id: str):
         del model
         K.clear_session()
 
-    file_io.write_embeddings(results, "embeddings.json")
+    file_io.write_embeddings(results, "embeddings/umap.json")
+
+
+def compare_level_reducer(model_id: str):
+    images_per_dataset = 1000
+
+    subsets = ["real_jaigo_000-150", "sim_jaigo_real_light_real_pose", "sim_jaigo_real_light_rand_pose",
+               "sim_jaigo_rand_light_real_pose", "sim_jaigo_rand_light_rand_pose"]
+
+    total_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, subsets,
+                                                              train_image_counts=[images_per_dataset] * len(subsets))
+    config = data.mrcnn_dimo.get_test_dimo_config(total_dataset, model_id)
+    model = mrcnn_training.load_model(model_id, config)
+
+    level_reducer = LevelDatasetReducer('umap', model, config)
+
+    level_reducer.train(total_dataset, 400)
+
+    results = {i: {} for i in range(4)}
+
+    for set in subsets:
+        print(f"\nReducing dimension of {set}")
+        subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set],
+                                                                   train_image_counts=[images_per_dataset])
+
+        embedding = level_reducer.reduce_dataset(subset_dataset, batch_size=100)
+
+        for level in range(len(embedding)):
+            results[level][set] = np.array(embedding[level]).tolist()
+
+    file_io.write_embeddings(results, "embeddings/umap.json")
 
 
 def show_embedding(file_name: str):
@@ -202,5 +233,5 @@ def show_embedding(file_name: str):
 
 
 if __name__ == "__main__":
-    compare_feature_maps("dimo20220315T0958")
-    #show_embedding("embeddings.json")
+    compare_level_reducer("dimo20220315T0958")
+    show_embedding("embeddings/umap.json")
