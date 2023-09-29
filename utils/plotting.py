@@ -323,5 +323,13 @@ def plot_feature_maps(data: dict, titles: list = None):
     fig.savefig('plots/umap.png', dpi=300)
 
 
+def plot_scores_ap(scores, ap):
+    fig, ax = plt.subplots(1, len(scores), figsize=(14,4))
+    for level in range(len(scores)):
+        ax[level].scatter(scores[level], ap)
+
+    plt.show()
+
+
 if __name__ == "__main__":
     experiment_2_epoch()

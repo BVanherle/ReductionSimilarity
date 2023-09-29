@@ -13,6 +13,7 @@ class PCAReducer(Reducer):
 
     def train(self, features: np.array):
         self.pipe.fit(features)
+        self.trained = True
 
     def reduce_dimension(self, features: np.array) -> np.array:
-        self.pipe.transform(features)
+        return self.pipe.transform(features)

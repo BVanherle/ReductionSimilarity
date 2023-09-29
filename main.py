@@ -16,6 +16,7 @@ from training import mrcnn as mrcnn_training
 import tensorflow.keras.backend as K
 from utils import plotting
 import logging.config
+from reduction import similarity
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -175,7 +176,8 @@ def compare_feature_maps(model_id: str):
         results[str(level)] = {}
         print(f"Creating Reducer for level {level}\n")
         total_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, subsets,
-                                                                  train_image_counts=[images_per_dataset] * len(subsets))
+                                                                  train_image_counts=[images_per_dataset] * len(
+                                                                      subsets))
         config = data.mrcnn_dimo.get_test_dimo_config(total_dataset, model_id)
         model = mrcnn_training.load_model(model_id, config)
 
@@ -185,7 +187,8 @@ def compare_feature_maps(model_id: str):
 
         for set in subsets:
             print(f"Reducing dimension of {set}")
-            subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set], train_image_counts=[images_per_dataset])
+            subset_dataset, val, _ = data.mrcnn_dimo.get_dimo_datasets(DIMO_PATH, [set],
+                                                                       train_image_counts=[images_per_dataset])
 
             embedding = dataset_reducer.reduce_dataset(subset_dataset, batch_size=2)
             results[str(level)][set] = embedding.tolist()
@@ -198,6 +201,7 @@ def compare_feature_maps(model_id: str):
 
 def compare_level_reducer(model_id: str):
     images_per_dataset = 1000
+    reducer = 'umap'
 
     subsets = ["real_jaigo_000-150", "sim_jaigo_real_light_real_pose", "sim_jaigo_real_light_rand_pose",
                "sim_jaigo_rand_light_real_pose", "sim_jaigo_rand_light_rand_pose"]
@@ -207,7 +211,7 @@ def compare_level_reducer(model_id: str):
     config = data.mrcnn_dimo.get_test_dimo_config(total_dataset, model_id)
     model = mrcnn_training.load_model(model_id, config)
 
-    level_reducer = LevelDatasetReducer('umap', model, config)
+    level_reducer = LevelDatasetReducer(reducer, model, config)
 
     level_reducer.train(total_dataset, 400)
 
@@ -223,7 +227,7 @@ def compare_level_reducer(model_id: str):
         for level in range(len(embedding)):
             results[level][set] = np.array(embedding[level]).tolist()
 
-    file_io.write_embeddings(results, "embeddings/umap.json")
+    file_io.write_embeddings(results, f"embeddings/{reducer}.json")
 
 
 def show_embedding(file_name: str):
@@ -232,6 +236,29 @@ def show_embedding(file_name: str):
     plotting.plot_feature_maps(data, titles)
 
 
+def compute_overlaps(file_name: str):
+    target_name = "real_jaigo_000-150"
+    embedding = file_io.read_embeddings(file_name)
+
+    scores = []
+
+    for level in embedding.keys():
+        level_scores = []
+        target_embedding = np.array(embedding[level][target_name])
+        for dataset_name in embedding[level].keys():
+            dataset_embedding = np.array(embedding[level][dataset_name])
+            score = similarity.gaussian_mixture_overlap(dataset_embedding, target_embedding)
+            print(f"Level {level}: {dataset_name} --> {score}")
+            level_scores.append(score)
+
+        scores.append(level_scores)
+
+    plotting.plot_scores_ap(scores, [78.83, 77.32, 69.32, 76.36, 69.56])
+
+    return scores
+
+
 if __name__ == "__main__":
-    compare_level_reducer("dimo20220315T0958")
-    show_embedding("embeddings/umap.json")
+    #compare_level_reducer("dimo20220315T0958")
+    #show_embedding("embeddings/umap.json")
+    compute_overlaps("embeddings/pca.json")
